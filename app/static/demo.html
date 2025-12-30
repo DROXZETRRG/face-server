@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人脸识别演示系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .panel {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        #video, #canvas {
+            width: 100%;
+            display: block;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .detection-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.9em;
+        }
+
+        .detection-overlay.active {
+            background: rgba(76, 175, 80, 0.9);
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 2px solid #bee5eb;
+        }
+
+        .face-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .face-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .face-info {
+            flex: 1;
+        }
+
+        .face-info strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .face-info small {
+            color: #666;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .slider-group {
+            margin-bottom: 20px;
+        }
+
+        .slider-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .slider {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+
+        .slider-value {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.9em;
+        }
+
+        .results {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .result-item {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-item.match {
+            border-left-color: #4caf50;
+            background: #f1f8f4;
+        }
+
+        .similarity {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.85em;
+        }
+
+        .similarity.high {
+            background: #4caf50;
+            color: white;
+        }
+
+        .similarity.medium {
+            background: #ff9800;
+            color: white;
+        }
+
+        .similarity.low {
+            background: #f44336;
+            color: white;
+        }
+
+        @media (max-width: 1200px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎭 人脸识别演示系统</h1>
+            <p>Face Recognition Demo - Powered by InsightFace</p>
+        </div>
+
+        <div class="content">
+            <!-- 左侧：人脸管理 -->
+            <div class="panel">
+                <h2>👤 人脸管理</h2>
+
+                <!-- 应用ID配置 -->
+                <div class="form-group">
+                    <label for="appId">应用 ID</label>
+                    <input type="text" id="appId" placeholder="输入或创建应用ID">
+                    <button class="btn btn-success" onclick="createApplication()" style="margin-top: 10px;">
+                        创建新应用
+                    </button>
+                </div>
+
+                <!-- 上传人脸 -->
+                <div class="form-group">
+                    <label for="personId">人员 ID</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="personId" placeholder="例如: p1, p2..." style="flex: 1;">
+                        <button class="btn btn-success" onclick="generatePersonId()" style="white-space: nowrap;">
+                            🔢 自动生成
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="faceImage">上传人脸图片</label>
+                    <div style="display: flex; gap: 10px; align-items: flex-start;">
+                        <div style="flex: 1;">
+                            <input type="file" id="faceImage" accept="image/*" onchange="previewImage(event)">
+                            <button class="btn btn-success" onclick="captureFromCamera()" style="margin-top: 10px; width: 100%;">
+                                📷 从摄像头抓拍
+                            </button>
+                        </div>
+                        <div id="imagePreview" style="width: 120px; height: 120px; border: 2px dashed #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #f5f5f5;">
+                            <span style="color: #999; font-size: 12px; text-align: center;">图片预览</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="registerFace()">
+                    📸 注册人脸
+                </button>
+
+                <div id="uploadStatus"></div>
+
+                <!-- 人脸列表 -->
+                <h3 style="margin-top: 30px; margin-bottom: 15px; color: #667eea;">已注册人脸</h3>
+                <button class="btn btn-success" onclick="loadFaces()">🔄 刷新列表</button>
+                <div id="faceList" class="face-list"></div>
+            </div>
+
+            <!-- 右侧：实时检测 -->
+            <div class="panel">
+                <h2>📹 实时人脸检测</h2>
+
+                <div class="video-container">
+                    <video id="video" autoplay playsinline></video>
+                    <canvas id="canvas"></canvas>
+                    <div id="detectionStatus" class="detection-overlay">
+                        等待启动...
+                    </div>
+                </div>
+
+                <!-- 采样频率控制 -->
+                <div class="slider-group">
+                    <label for="samplingRate">
+                        采样频率: <span class="slider-value" id="samplingRateValue">500</span> ms
+                    </label>
+                    <input type="range" id="samplingRate" class="slider" 
+                           min="100" max="2000" value="500" step="100"
+                           onchange="updateSamplingRate(this.value)">
+                </div>
+
+                <!-- 相似度阈值 -->
+                <div class="slider-group">
+                    <label for="threshold">
+                        识别阈值: <span class="slider-value" id="thresholdValue">0.60</span>
+                    </label>
+                    <input type="range" id="threshold" class="slider" 
+                           min="0.3" max="0.9" value="0.6" step="0.05"
+                           onchange="updateThreshold(this.value)">
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-success" onclick="startCamera()">
+                        🎥 启动摄像头
+                    </button>
+                    <button class="btn btn-danger" onclick="stopCamera()">
+                        ⏹️ 停止检测
+                    </button>
+                </div>
+
+                <!-- 检测结果 -->
+                <h3 style="margin-bottom: 15px; color: #667eea;">检测结果</h3>
+                <div id="results" class="results"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let ctx = canvas.getContext('2d');
+        let stream = null;
+        let ws = null;
+        let samplingInterval = null;
+        let samplingRate = 500; // 默认500ms
+        let threshold = 0.6; // 默认0.6
+        let nextPersonIdNumber = 1; // 用于自动生成递增的person_id
+        let capturedImageData = null; // 存储抓拍的图片数据
+
+        // 更新采样频率
+        function updateSamplingRate(value) {
+            samplingRate = parseInt(value);
+            document.getElementById('samplingRateValue').textContent = samplingRate;
+            
+            // 如果正在检测，重新启动
+            if (ws && ws.readyState === WebSocket.OPEN && samplingInterval) {
+                stopSampling();
+                startSampling();
+            }
+        }
+
+        // 更新阈值
+        function updateThreshold(value) {
+            threshold = parseFloat(value);
+            document.getElementById('thresholdValue').textContent = threshold.toFixed(2);
+            
+            // 如果正在检测，重新连接WebSocket以更新阈值
+            if (ws && ws.readyState === WebSocket.OPEN && samplingInterval) {
+                const wasRunning = true;
+                ws.close();
+                setTimeout(() => {
+                    if (wasRunning) {
+                        connectWebSocket();
+                    }
+                }, 100);
+            }
+        }
+
+        // 创建应用
+        async function createApplication() {
+            try {
+                const timestamp = Date.now();
+                const appCode = `demo_${timestamp}`;
+                
+                const response = await fetch('/api/v1/applications/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        app_code: appCode,
+                        app_name: 'Demo Application'
+                    })
+                });
+
+                const result = await response.json();
+                if (result.code === 0) {
+                    document.getElementById('appId').value = result.data.id;
+                    showStatus('uploadStatus', `应用创建成功！ID: ${result.data.id}`, 'success');
+                } else {
+                    showStatus('uploadStatus', `创建失败: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showStatus('uploadStatus', `错误: ${error.message}`, 'error');
+            }
+        }
+
+        // 自动生成person_id
+        function generatePersonId() {
+            document.getElementById('personId').value = `p${nextPersonIdNumber}`;
+            nextPersonIdNumber++;
+        }
+
+        // 从摄像头抓拍
+        function captureFromCamera() {
+            if (!stream) {
+                showStatus('uploadStatus', '⚠️ 请先启动摄像头！', 'error');
+                return;
+            }
+
+            // 创建临时canvas捕获当前视频帧
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = video.videoWidth;
+            tempCanvas.height = video.videoHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(video, 0, 0);
+
+            // 转换为blob
+            tempCanvas.toBlob((blob) => {
+                capturedImageData = blob;
+                
+                // 显示预览
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const previewDiv = document.getElementById('imagePreview');
+                    previewDiv.innerHTML = `<img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                };
+                reader.readAsDataURL(blob);
+                
+                // 清空文件输入框
+                document.getElementById('faceImage').value = '';
+                
+                showStatus('uploadStatus', '✅ 抓拍成功！可以注册了', 'success');
+            }, 'image/jpeg', 0.95);
+        }
+
+        // 预览上传的图片
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                capturedImageData = null; // 清除抓拍的数据
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const previewDiv = document.getElementById('imagePreview');
+                    previewDiv.innerHTML = `<img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 注册人脸
+        async function registerFace() {
+            const appId = document.getElementById('appId').value;
+            const personId = document.getElementById('personId').value;
+            const fileInput = document.getElementById('faceImage');
+
+            // 检查是使用抓拍的图片还是上传的文件
+            const hasFile = fileInput.files && fileInput.files[0];
+            const hasCaptured = capturedImageData !== null;
+
+            if (!appId || !personId || (!hasFile && !hasCaptured)) {
+                showStatus('uploadStatus', '⚠️ 请填写完整信息并选择图片或抓拍！', 'error');
+                return;
+            }
+
+            showStatus('uploadStatus', '正在处理...', 'info');
+
+            try {
+                // 读取图片并转换为base64
+                let base64;
+                if (hasCaptured) {
+                    // 使用抓拍的图片
+                    base64 = await blobToBase64(capturedImageData);
+                } else {
+                    // 使用上传的文件
+                    base64 = await fileToBase64(fileInput.files[0]);
+                }
+
+                const response = await fetch('/api/v1/faces/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        app_id: appId,
+                        person_id: personId,
+                        image_base64: base64,
+                        metadata: {
+                            name: personId,
+                            registered_at: new Date().toISOString()
+                        }
+                    })
+                });
+
+                const result = await response.json();
+                if (result.code === 0) {
+                    showStatus('uploadStatus', '✅ 人脸注册成功！', 'success');
+                    loadFaces();
+                    fileInput.value = '';
+                    capturedImageData = null;
+                    // 清除预览
+                    document.getElementById('imagePreview').innerHTML = '<span style="color: #999; font-size: 12px; text-align: center;">图片预览</span>';
+                    // 自动生成下一个person_id
+                    generatePersonId();
+                } else {
+                    showStatus('uploadStatus', `❌ 注册失败: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showStatus('uploadStatus', `❌ 错误: ${error.message}`, 'error');
+            }
+        }
+
+        // 加载人脸列表
+        async function loadFaces() {
+            const appId = document.getElementById('appId').value;
+            if (!appId) {
+                showStatus('uploadStatus', '请先输入应用ID！', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/v1/faces/list', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        app_id: appId,
+                        skip: 0,
+                        limit: 50
+                    })
+                });
+
+                const result = await response.json();
+                if (result.code === 0) {
+                    displayFaces(result.data.items);
+                } else {
+                    showStatus('uploadStatus', `加载失败: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showStatus('uploadStatus', `错误: ${error.message}`, 'error');
+            }
+        }
+
+        // 显示人脸列表
+        function displayFaces(faces) {
+            const faceList = document.getElementById('faceList');
+            if (!faces || faces.length === 0) {
+                faceList.innerHTML = '<div class="status info">暂无注册人脸</div>';
+                nextPersonIdNumber = 1;
+                return;
+            }
+
+            // 分析现有的person_id，找出最大的数字
+            let maxNumber = 0;
+            faces.forEach(face => {
+                const match = face.person_id.match(/^p(\d+)$/);
+                if (match) {
+                    const num = parseInt(match[1]);
+                    if (num > maxNumber) maxNumber = num;
+                }
+            });
+            nextPersonIdNumber = maxNumber + 1;
+
+            faceList.innerHTML = faces.map(face => `
+                <div class="face-item">
+                    <div class="face-info">
+                        <strong>${face.person_id}</strong>
+                        <small>ID: ${face.id.substring(0, 8)}...</small>
+                    </div>
+                    <button class="btn btn-danger" onclick="deleteFace('${face.id}')">
+                        🗑️ 删除
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // 删除人脸
+        async function deleteFace(faceId) {
+            if (!confirm('确定要删除这个人脸吗？')) return;
+
+            try {
+                const response = await fetch('/api/v1/faces/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        face_id: faceId
+                    })
+                });
+
+                const result = await response.json();
+                if (result.code === 0) {
+                    showStatus('uploadStatus', '✅ 删除成功！', 'success');
+                    loadFaces();
+                } else {
+                    showStatus('uploadStatus', `❌ 删除失败: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showStatus('uploadStatus', `❌ 错误: ${error.message}`, 'error');
+            }
+        }
+
+        // 启动摄像头
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    } 
+                });
+                video.srcObject = stream;
+
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                };
+
+                // 连接 WebSocket
+                connectWebSocket();
+
+                updateDetectionStatus('检测中...', true);
+            } catch (error) {
+                alert('无法访问摄像头: ' + error.message);
+            }
+        }
+
+        // 停止摄像头
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+
+            stopSampling();
+            updateDetectionStatus('已停止', false);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // 连接 WebSocket
+        function connectWebSocket() {
+            const appId = document.getElementById('appId').value;
+            if (!appId) {
+                alert('请先输入应用ID！');
+                stopCamera();
+                return;
+            }
+
+            const wsUrl = `ws://${window.location.host}/ws/detect?app_id=${appId}&threshold=${threshold}`;
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                console.log('WebSocket 连接成功');
+                startSampling();
+            };
+
+            ws.onmessage = (event) => {
+                const result = JSON.parse(event.data);
+                handleDetectionResult(result);
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket 错误:', error);
+                updateDetectionStatus('连接错误', false);
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket 连接关闭');
+                stopSampling();
+            };
+        }
+
+        // 开始采样
+        function startSampling() {
+            samplingInterval = setInterval(() => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    captureAndSend();
+                }
+            }, samplingRate);
+        }
+
+        // 停止采样
+        function stopSampling() {
+            if (samplingInterval) {
+                clearInterval(samplingInterval);
+                samplingInterval = null;
+            }
+        }
+
+        // 捕获并发送帧（使用二进制传输优化带宽）
+        function captureAndSend() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+
+            canvas.toBlob((blob) => {
+                // 直接发送二进制数据，不使用base64编码
+                // 这样可以节省约33%的带宽
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(blob);
+                }
+            }, 'image/jpeg', 0.8);
+        }
+
+        // 处理检测结果
+        function handleDetectionResult(result) {
+            // 清除之前的绘制
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (result.error) {
+                console.error('检测错误:', result.error);
+                return;
+            }
+
+            // 绘制检测框
+            if (result.faces && result.faces.length > 0) {
+                result.faces.forEach(face => {
+                    // 绘制边界框
+                    ctx.strokeStyle = face.match ? '#4caf50' : '#ff9800';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(face.bbox[0], face.bbox[1], 
+                                   face.bbox[2] - face.bbox[0], 
+                                   face.bbox[3] - face.bbox[1]);
+
+                    // 显示标签
+                    const label = face.match 
+                        ? `${face.person_id} (${(face.similarity * 100).toFixed(1)}%)`
+                        : '未识别';
+                    
+                    ctx.fillStyle = face.match ? '#4caf50' : '#ff9800';
+                    ctx.font = 'bold 16px Arial';
+                    ctx.fillText(label, face.bbox[0], face.bbox[1] - 10);
+                });
+
+                // 更新结果列表
+                displayResults(result.faces);
+            }
+
+            updateDetectionStatus(`检测到 ${result.face_count} 张人脸`, true);
+        }
+
+        // 显示结果
+        function displayResults(faces) {
+            const resultsDiv = document.getElementById('results');
+            if (!faces || faces.length === 0) {
+                resultsDiv.innerHTML = '<div class="status info">未检测到人脸</div>';
+                return;
+            }
+
+            resultsDiv.innerHTML = faces.map(face => {
+                const simClass = face.match 
+                    ? (face.similarity > 0.8 ? 'high' : 'medium')
+                    : 'low';
+                
+                return `
+                    <div class="result-item ${face.match ? 'match' : ''}">
+                        ${face.match 
+                            ? `<strong>${face.person_id}</strong>` 
+                            : '<strong>未知人脸</strong>'}
+                        ${face.match 
+                            ? `<span class="similarity ${simClass}">${(face.similarity * 100).toFixed(1)}%</span>`
+                            : ''}
+                        <br>
+                        <small>置信度: ${(face.confidence * 100).toFixed(1)}%</small>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 更新检测状态
+        function updateDetectionStatus(text, active) {
+            const statusDiv = document.getElementById('detectionStatus');
+            statusDiv.textContent = text;
+            statusDiv.className = 'detection-overlay' + (active ? ' active' : '');
+        }
+
+        // 显示状态消息
+        function showStatus(elementId, message, type) {
+            const statusDiv = document.getElementById(elementId);
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        // 文件转 Base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Blob转 Base64
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        // 页面加载时初始化
+        window.onload = () => {
+            // 尝试加载保存的 appId
+            const savedAppId = localStorage.getItem('appId');
+            if (savedAppId) {
+                document.getElementById('appId').value = savedAppId;
+                loadFaces();
+            }
+
+            // 监听 appId 变化
+            document.getElementById('appId').addEventListener('change', (e) => {
+                localStorage.setItem('appId', e.target.value);
+            });
+
+            // 自动生成第一个person_id
+            generatePersonId();
+        };
+
+        // 页面关闭时清理
+        window.onbeforeunload = () => {
+            stopCamera();
+        };
+    </script>
+</body>
+</html>
