@@ -15,8 +15,17 @@ class Settings(BaseSettings):
     db_name: str = "faceserver"
     
     # Storage
-    storage_type: Literal["local", "cloud"] = "local"
+    storage_type: Literal["local", "oss", "s3"] = "local"
     local_storage_path: str = "./storage"
+    
+    # 阿里云 OSS 配置
+    oss_access_key_id: str = ""
+    oss_access_key_secret: str = ""
+    oss_bucket_name: str = "face-server-bucket"
+    oss_endpoint: str = "oss-cn-hangzhou.aliyuncs.com"  # 例如: oss-cn-hangzhou.aliyuncs.com
+    oss_domain: str = ""  # 可选: 自定义域名，留空则使用默认域名
+    
+    # S3 兼容存储配置（保留向后兼容）
     cloud_storage_bucket: str = "face-server-bucket"
     cloud_storage_endpoint: str = "https://s3.amazonaws.com"
     

@@ -8,7 +8,16 @@ from pathlib import Path
 from abc import ABC, abstractmethod
 import os
 import uuid
+import logging
 from app.config import settings
+
+try:
+    import oss2
+    OSS_AVAILABLE = True
+except ImportError:
+    OSS_AVAILABLE = False
+
+logger = logging.getLogger(__name__)
 
 
 class StorageBackend(ABC):
@@ -238,6 +247,138 @@ class CloudStorage(StorageBackend):
         return f"{self.endpoint}/{self.bucket}/{file_path}"
 
 
+class OSSStorage(StorageBackend):
+    """阿里云 OSS 存储后端。"""
+    
+    def __init__(
+        self,
+        access_key_id: str = None,
+        access_key_secret: str = None,
+        bucket_name: str = None,
+        endpoint: str = None,
+        domain: str = None
+    ):
+        """初始化阿里云 OSS 存储。
+        
+        Args:
+            access_key_id: 阿里云 AccessKey ID
+            access_key_secret: 阿里云 AccessKey Secret
+            bucket_name: OSS bucket 名称
+            endpoint: OSS endpoint (例如: oss-cn-hangzhou.aliyuncs.com)
+            domain: 自定义域名（可选）
+        """
+        if not OSS_AVAILABLE:
+            raise ImportError(
+                "oss2 is not installed. Install it with: pip install oss2"
+            )
+        
+        self.access_key_id = access_key_id or settings.oss_access_key_id
+        self.access_key_secret = access_key_secret or settings.oss_access_key_secret
+        self.bucket_name = bucket_name or settings.oss_bucket_name
+        self.endpoint = endpoint or settings.oss_endpoint
+        self.domain = domain or settings.oss_domain
+        
+        if not self.access_key_id or not self.access_key_secret:
+            raise ValueError(
+                "OSS credentials are required. Set OSS_ACCESS_KEY_ID and "
+                "OSS_ACCESS_KEY_SECRET in environment variables or .env file"
+            )
+        
+        # 初始化 OSS 认证和 Bucket
+        auth = oss2.Auth(self.access_key_id, self.access_key_secret)
+        self.bucket = oss2.Bucket(auth, self.endpoint, self.bucket_name)
+        
+        logger.info(
+            f"Initialized OSS storage: bucket={self.bucket_name}, "
+            f"endpoint={self.endpoint}"
+        )
+    
+    def save(self, file: BinaryIO, filename: str, folder: str = "") -> str:
+        """保存文件到阿里云 OSS。
+        
+        Args:
+            file: 文件对象
+            filename: 原始文件名
+            folder: 可选的文件夹前缀
+            
+        Returns:
+            对象 key（用于访问文件）
+        """
+        # 生成唯一文件名
+        ext = os.path.splitext(filename)[1]
+        unique_filename = f"{uuid.uuid4()}{ext}"
+        
+        # 构建对象 key
+        if folder:
+            object_key = f"{folder}/{unique_filename}"
+        else:
+            object_key = unique_filename
+        
+        # 上传文件
+        try:
+            file_data = file.read()
+            result = self.bucket.put_object(object_key, file_data)
+            
+            if result.status == 200:
+                logger.info(f"File uploaded to OSS: {object_key}")
+                return object_key
+            else:
+                raise Exception(f"OSS upload failed with status: {result.status}")
+        except Exception as e:
+            logger.error(f"Failed to upload file to OSS: {e}")
+            raise
+    
+    def delete(self, file_path: str) -> bool:
+        """从阿里云 OSS 删除文件。
+        
+        Args:
+            file_path: 对象 key
+            
+        Returns:
+            是否删除成功
+        """
+        try:
+            result = self.bucket.delete_object(file_path)
+            if result.status == 204:
+                logger.info(f"File deleted from OSS: {file_path}")
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Failed to delete file from OSS: {e}")
+            return False
+    
+    def exists(self, file_path: str) -> bool:
+        """检查文件是否存在于阿里云 OSS。
+        
+        Args:
+            file_path: 对象 key
+            
+        Returns:
+            文件是否存在
+        """
+        try:
+            return self.bucket.object_exists(file_path)
+        except Exception as e:
+            logger.error(f"Failed to check file existence in OSS: {e}")
+            return False
+    
+    def get_url(self, file_path: str) -> str:
+        """获取文件的访问 URL。
+        
+        Args:
+            file_path: 对象 key
+            
+        Returns:
+            文件的公网访问 URL
+        """
+        if self.domain:
+            # 使用自定义域名
+            return f"https://{self.domain}/{file_path}"
+        else:
+            # 使用默认 OSS 域名
+            return f"https://{self.bucket_name}.{self.endpoint}/{file_path}"
+
+
 class StorageManager:
     """Storage manager that provides unified interface."""
     
@@ -251,8 +392,16 @@ class StorageManager:
             self.backend = backend
         elif settings.storage_type == "local":
             self.backend = LocalStorage()
-        else:
+        elif settings.storage_type == "oss":
+            self.backend = OSSStorage()
+        elif settings.storage_type == "s3":
             self.backend = CloudStorage()
+        else:
+            logger.warning(
+                f"Unknown storage type: {settings.storage_type}, "
+                "falling back to local storage"
+            )
+            self.backend = LocalStorage()
     
     def save(self, file: BinaryIO, filename: str, folder: str = "") -> str:
         """Save a file using the configured backend."""
