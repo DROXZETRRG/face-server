@@ -45,6 +45,8 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"  # 忽略未知的配置项
+        
 
 
 settings = Settings()
